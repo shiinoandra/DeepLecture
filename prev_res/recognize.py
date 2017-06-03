@@ -48,28 +48,37 @@ y = tf.sparse_to_dense(decoded[0].indices, decoded[0].dense_shape, decoded[0].va
 # command line argument for input wave file path
 tf.sg_arg_def(file=('', 'speech wave file to recognize.'))
 
+
 # load wave file
 sampr = 16000
-wav, _ = librosa.load(tf.sg_arg().file, mono=True, sr=16000)
+# wav, _ = librosa.load(tf.sg_arg().file, mono=True, sr=16000)
 # get mfcc feature
-for i in range(0,len(wav),(sampr*3)) :
-    chunk = wav[i:i+(sampr*3)]
-    mfcc = np.transpose(np.expand_dims(librosa.feature.mfcc(chunk, sampr), axis=0), [0, 2, 1])
 
-    # run network
-    with tf.Session() as sess:
+sentences_noLM = []
+sentences_LM = []
+def do_recognize(wav):
+    # wav, _ = librosa.load(filename, mono=True, sr=16000)
+    for i in range(0,len(wav),(sampr*3)) :
+        chunk = wav[i:i+(sampr*3)]
+        mfcc = np.transpose(np.expand_dims(librosa.feature.mfcc(chunk, sampr), axis=0), [0, 2, 1])
 
-        # init variables
-        tf.sg_init(sess)
+        # run network
+        with tf.Session() as sess:
 
-        # restore parameters
-        saver = tf.train.Saver()
-        saver.restore(sess, tf.train.latest_checkpoint('asset/train_orig'))
-        # run session
-        label = sess.run(y, feed_dict={x: mfcc})
-        out_str = data.get_index(label)
+            # init variables
+            tf.sg_init(sess)
 
-        print "without LM"
-        print(out_str)
-        print "with LM"
-        print(spell.correction(out_str))
+            # restore parameters
+            saver = tf.train.Saver()
+            saver.restore(sess, tf.train.latest_checkpoint('asset/train_orig'))
+            # run session
+            label = sess.run(y, feed_dict={x: mfcc})
+            out_str = data.get_index(label)
+
+            # print "without LM"
+            # new_sentence = sentence.Sentence(time_label_start,int(time_label_start_remainder), time_label_end,int(time_label_end_remainder),sub_text)
+            # print(out_str)
+            # print "with LM"
+            # print(spell.correction(out_str))
+
+            return (out_str,spell.correction(out_str))
